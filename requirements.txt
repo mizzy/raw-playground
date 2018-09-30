@@ -1,0 +1,7 @@
+rawpy
+matplotlib
+Pillow
+numpy
+imageio
+jupyter
+jupyter-console

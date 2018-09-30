@@ -4,6 +4,8 @@
 import rawpy
 import numpy as np
 from matplotlib.pyplot import imshow
+import imageio
+import math
 
 raw = rawpy.imread('DSC_3346.NEF')
 
@@ -65,21 +67,20 @@ for y in range(0, h, 2):
 
 ### デモザイク後のプレビュー
 
+'''
 outimg = dms_img.copy()
 outimg = outimg.reshape((h // 2, w //2, 3))
 outimg[outimg < 0] = 0
 outimg = outimg / outimg.max()
 imshow(outimg)
-
+'''
 
 ### ホワイトバランス補正
 wb = np.array(raw.camera_whitebalance)
 img_wb = dms_img.copy().flatten().reshape((-1, 3))
-print(wb)
-print(wb[:3])
 
 for index, pixel in enumerate(img_wb):
-    # pixel = pixel * wb[:3] / max(wb)
+    pixel = pixel * wb[:3] / max(wb)
     img_wb[index] = pixel
 
 ### ホワイトバランス補正後のプレビュー
@@ -90,3 +91,24 @@ outimg[outimg < 0] = 0
 outimg = outimg / outimg.max()
 imshow(outimg)
 '''
+
+### カラーマトリクス補正
+color_matrix = np.array([[1024, 0, 0], [0, 1024, 0], [0, 0, 1024]])
+
+img_ccm = np.zeros_like(img_wb)
+for index, pixel in enumerate(img_wb):
+    pixel = np.dot(color_matrix, pixel)
+    img_ccm[index] = pixel
+
+### ガンマ補正
+img_gamma = img_ccm.copy().flatten()
+img_gamma[img_gamma < 0] = 0
+img_gamma = img_gamma/img_gamma.max()
+for index, val in enumerate(img_gamma):
+    img_gamma[index] = math.pow(val, 1/2.2)
+img_gamma = img_gamma.reshape((h//2, w//2, 3))
+
+outimg = img_gamma.copy().reshape((h // 2, w //2, 3))
+outimg[outimg < 0] = 0
+outimg = outimg * 255
+imageio.imwrite("sample.png", outimg.astype('uint8'))
